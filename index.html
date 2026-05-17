@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RunIt — Python Online Compiler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/eclipse.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+<style>
+:root{--bg:#0c0c14;--bg2:#13131f;--bg3:#1c1c2e;--border:#252538;--text:#e4e4f0;--muted:#4e4e6e;--accent:#22c55e;--accent2:#16a34a;--blue:#1d9bf0;--font:'Space Grotesk',sans-serif;--mono:'Fira Code',monospace;}
+[data-theme="light"]{--bg:#f5f5fa;--bg2:#ffffff;--bg3:#ebebf5;--border:#dcdcee;--text:#0c0c1e;--muted:#8888aa;--accent:#16a34a;--accent2:#15803d;--blue:#1a7fd4;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 1.4rem;background:var(--bg2);border-bottom:1px solid var(--border);transition:background .3s,border-color .3s;}
+.nav-logo{display:flex;align-items:center;gap:9px;cursor:pointer;}
+.logo-mark{width:32px;height:32px;flex-shrink:0;}
+.logo-name{font-size:17px;font-weight:800;letter-spacing:-.03em;color:var(--text);}
+.logo-name b{color:var(--blue);}
+.nav-center{display:flex;align-items:center;gap:2px;}
+.nav-link{font-family:var(--mono);font-size:12px;color:var(--muted);padding:5px 12px;border-radius:6px;cursor:pointer;transition:all .2s;border:none;background:none;}
+.nav-link:hover,.nav-link.active{color:var(--text);background:var(--bg3);}
+.nav-right{display:flex;align-items:center;gap:8px;}
+.theme-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.theme-btn:hover{color:var(--text);}
+.hamburger{display:none;flex-direction:column;gap:5px;width:30px;height:30px;cursor:pointer;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:7px;justify-content:center;}
+.hamburger span{display:block;height:1.5px;background:var(--muted);border-radius:2px;transition:all .3s;}
+.hamburger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);background:var(--text);}
+.hamburger.open span:nth-child(2){opacity:0;}
+.hamburger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);background:var(--text);}
+.mobile-menu{position:fixed;top:56px;left:0;right:0;z-index:199;background:var(--bg2);border-bottom:1px solid var(--border);padding:.75rem 1.25rem;display:flex;flex-direction:column;gap:2px;transform:translateY(-110%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
+.mobile-menu.open{transform:translateY(0);}
+.mobile-menu .nav-link{padding:9px 12px;font-size:13px;}
+
+/* PAGES */
+.page{display:none;padding-top:56px;min-height:100vh;position:relative;z-index:1;}
+.page.active{display:block;animation:fadeIn .2s ease;}
+.editor-page{display:none;flex-direction:column;height:100vh;padding-top:56px;}
+.editor-page.active{display:flex;animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* HOME */
+.hero{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:calc(100vh - 56px);padding:3rem 2rem;position:relative;}
+.hero::before{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:58px 58px;opacity:.22;pointer-events:none;mask-image:radial-gradient(ellipse 75% 55% at 50% 50%,black 20%,transparent 100%);}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--accent);background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.22);border-radius:20px;padding:5px 14px;margin-bottom:1.6rem;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:livepulse 2s infinite;}
+@keyframes livepulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,.6);}50%{opacity:.7;box-shadow:0 0 0 5px rgba(34,197,94,0);}}
+.hero h1{font-size:clamp(2.6rem,6vw,5rem);font-weight:800;line-height:1.08;letter-spacing:-.04em;margin-bottom:1rem;max-width:12ch;}
+.hero h1 em{font-style:normal;color:var(--blue);}
+.hero-slogan{font-family:var(--mono);font-size:13px;color:var(--muted);margin-bottom:.4rem;}
+.hero-sub{font-size:16px;color:var(--muted);margin-bottom:2.2rem;max-width:36ch;}
+.cta-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;}
+.btn-primary{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:11px 26px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .2s;box-shadow:0 0 20px rgba(34,197,94,.28);}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-1px);}
+.btn-secondary{background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:11px 20px;font-size:14px;font-family:var(--font);cursor:pointer;transition:all .2s;}
+.btn-secondary:hover{border-color:var(--muted);color:var(--text);}
+.stats-row{display:flex;gap:3rem;margin-top:3.5rem;justify-content:center;flex-wrap:wrap;}
+.stat{text-align:center;}
+.stat-num{font-size:1.85rem;font-weight:800;line-height:1;}
+.stat-label{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;}
+
+/* EDITOR */
+.editor-topbar{display:flex;align-items:center;justify-content:space-between;padding:0 12px;height:40px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
+.file-tabs{display:flex;gap:2px;}
+.ftab{font-family:var(--mono);font-size:12px;padding:4px 13px;border-radius:5px;color:var(--muted);cursor:pointer;transition:all .2s;}
+.ftab.active{background:var(--bg3);color:var(--text);}
+.run-btn{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#fff;border:none;border-radius:7px;padding:6px 18px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;animation:runpulse 2.2s ease-in-out infinite;transition:background .2s;}
+.run-btn svg{width:11px;height:11px;fill:#fff;flex-shrink:0;}
+@keyframes runpulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.55);}50%{box-shadow:0 0 0 9px rgba(34,197,94,0);}}
+.run-btn:hover{background:var(--accent2);animation:none;}
+.editor-body{display:flex;flex:1;overflow:hidden;}
+.editor-left{display:flex;flex-direction:column;flex:1 1 58%;border-right:1px solid var(--border);overflow:hidden;min-width:0;}
+.editor-right{display:flex;flex-direction:column;flex:1 1 42%;overflow:hidden;min-width:0;}
+.pane-header{display:flex;align-items:center;gap:6px;padding:5px 12px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;font-family:var(--mono);font-size:11px;color:var(--muted);}
+.pane-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.cm-wrap{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.cm-wrap .CodeMirror{flex:1;height:100%;font-family:var(--mono)!important;font-size:13.5px!important;line-height:1.75!important;}
+.output-tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
+.out-tab{font-family:var(--mono);font-size:11px;padding:7px 16px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;user-select:none;}
+.out-tab.active{color:var(--text);border-bottom-color:var(--accent);}
+.err-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:9px;background:#ef4444;color:#fff;font-size:9px;margin-left:5px;font-weight:700;padding:0 4px;}
+.output-panel,.errors-panel{flex:1;overflow-y:auto;padding:14px 16px;font-family:var(--mono);font-size:13px;line-height:1.75;background:var(--bg);}
+.hidden{display:none!important;}
+.out-line{display:flex;gap:8px;margin-bottom:1px;}
+.out-prompt{color:var(--muted);user-select:none;flex-shrink:0;}
+.out-text{color:#4ade80;word-break:break-all;}
+.out-empty{color:var(--muted);font-size:12px;}
+.out-done{color:var(--muted);font-size:11px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);}
+.err-item{display:flex;align-items:flex-start;gap:8px;padding:8px 12px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.16);border-radius:7px;margin-bottom:7px;}
+.err-icon{color:#ef4444;flex-shrink:0;}
+.err-text{color:#fca5a5;word-break:break-all;font-size:12px;line-height:1.6;}
+.no-errors{color:var(--accent);font-size:12px;}
+.status-bar{display:flex;align-items:center;gap:1.5rem;padding:3px 14px;background:var(--blue);flex-shrink:0;}
+.status-item{font-family:var(--mono);font-size:10px;color:#fff;}
+.status-item.ml{margin-left:auto;}
+.CodeMirror-hints{font-family:var(--mono)!important;font-size:12px!important;background:var(--bg2)!important;border:1px solid var(--border)!important;border-radius:8px!important;box-shadow:0 8px 28px rgba(0,0,0,.5)!important;padding:4px!important;z-index:999!important;}
+.CodeMirror-hint{color:var(--text)!important;padding:5px 12px!important;border-radius:4px!important;}
+.CodeMirror-hint-active{background:var(--blue)!important;color:#fff!important;}
+
+/* DOCS */
+.docs-page{padding:2.5rem 2rem;max-width:880px;margin:0 auto;}
+.docs-page h2{font-size:2rem;font-weight:800;margin-bottom:.5rem;}
+.docs-page>p{color:var(--muted);font-size:15px;margin-bottom:2rem;}
+.docs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-bottom:2.5rem;}
+.doc-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.2rem;cursor:pointer;transition:all .2s;}
+.doc-card:hover{border-color:var(--blue);transform:translateY(-2px);}
+.doc-card-title{font-size:13px;font-weight:700;margin-bottom:6px;}
+.doc-card-code{font-family:var(--mono);font-size:11px;color:var(--blue);}
+.doc-section h3{font-size:1.05rem;font-weight:700;margin-bottom:.9rem;}
+.code-block{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-family:var(--mono);font-size:12px;line-height:1.85;overflow-x:auto;}
+.ck{color:#60a5fa;}.cf{color:#fbbf24;}.cs{color:#f87171;}.cc{color:var(--muted);font-style:italic;}
+
+/* ABOUT */
+.about-page{padding:3rem 2rem;max-width:700px;margin:0 auto;}
+.about-page h2{font-size:2rem;font-weight:800;margin-bottom:1rem;}
+.about-page p{color:var(--muted);font-size:15px;line-height:1.8;margin-bottom:1.25rem;}
+.about-tag{display:inline-block;font-family:var(--mono);font-size:11px;color:var(--accent);background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:3px 12px;margin:2px;}
+.feature-list{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:1.5rem 0;}
+.feature-item{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem;}
+.fi-icon{font-size:20px;margin-bottom:6px;}
+.fi-title{font-size:13px;font-weight:700;}
+.fi-desc{font-size:12px;color:var(--muted);margin-top:3px;}
+
+/* CONTACT */
+.contact-page{padding:3rem 2rem;max-width:540px;margin:0 auto;}
+.contact-page h2{font-size:2rem;font-weight:800;margin-bottom:.5rem;}
+.contact-page>p{color:var(--muted);font-size:15px;margin-bottom:2rem;}
+.form-group{margin-bottom:1.2rem;}
+.form-label{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:.04em;}
+.form-input,.form-textarea{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;transition:border-color .2s;}
+.form-input:focus,.form-textarea:focus{border-color:var(--blue);}
+.form-textarea{min-height:120px;resize:vertical;}
+.form-submit{width:100%;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .2s;}
+.form-submit:hover{background:#1a8cd8;}
+
+@media(max-width:768px){
+  .nav-center{display:none;}.hamburger{display:flex;}
+  .editor-body{flex-direction:column;}
+  .editor-left{flex:none;height:50%;border-right:none;border-bottom:1px solid var(--border);}
+  .editor-right{flex:none;height:50%;}
+  .hero h1{font-size:2.4rem;}
+  .feature-list{grid-template-columns:1fr;}
+  .stats-row{gap:1.5rem;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo" onclick="showPage('home')">
+    <svg class="logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="40" height="40" rx="10" fill="#1d9bf0"/>
+      <path d="M10 8 L32 20 L10 32 Z" fill="white" opacity="0.15"/>
+      <path d="M11 9.5 L30 20 L11 30.5 Z" fill="white"/>
+      <rect x="20" y="17.2" width="8.5" height="5.6" rx="1" fill="#1d9bf0"/>
+      <rect x="20" y="17.2" width="4.2" height="2.4" rx="0.7" fill="white"/>
+    </svg>
+    <span class="logo-name">Run<b>It</b></span>
+  </div>
+  <div class="nav-center">
+    <button class="nav-link active" onclick="showPage('home')" data-page="home">Home</button>
+    <button class="nav-link" onclick="showPage('editor')" data-page="editor">Editor</button>
+    <button class="nav-link" onclick="showPage('docs')" data-page="docs">Docs</button>
+    <button class="nav-link" onclick="showPage('about')" data-page="about">About</button>
+    <button class="nav-link" onclick="showPage('contact')" data-page="contact">Contact</button>
+  </div>
+  <div class="nav-right">
+    <button class="theme-btn" id="themebtn" onclick="toggleTheme()">&#127769;</button>
+    <button class="hamburger" id="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <button class="nav-link" onclick="showPage('home');closeMenu()">Home</button>
+  <button class="nav-link" onclick="showPage('editor');closeMenu()">Editor</button>
+  <button class="nav-link" onclick="showPage('docs');closeMenu()">Docs</button>
+  <button class="nav-link" onclick="showPage('about');closeMenu()">About</button>
+  <button class="nav-link" onclick="showPage('contact');closeMenu()">Contact</button>
+</div>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <section class="hero">
+    <div class="hero-badge"><span class="live-dot"></span>Python Online Compiler</div>
+    <h1>Run Python code<br><em>in one second.</em></h1>
+    <p class="hero-slogan">Code it.Run it.Nail it.</p>
+    <p class="hero-sub">No install.No setup.Just open your browser and start coding.</p>
+    <div class="cta-row">
+      <button class="btn-primary" onclick="showPage('editor')">&#9654; Start Coding</button>
+      <button class="btn-secondary" onclick="showPage('docs')">See Examples &rarr;</button>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-num">0ms</div><div class="stat-label">setup time</div></div>
+      <div class="stat"><div class="stat-num">100%</div><div class="stat-label">free forever</div></div>
+      <div class="stat"><div class="stat-num">Python<br>3.11</div><div class="stat-label">powered by</div></div>
+    </div>
+  </section>
+</div>
+
+<!-- EDITOR -->
+<div class="editor-page" id="page-editor">
+  <div class="editor-topbar">
+    <div class="file-tabs"><span class="ftab active">main.py</span></div>
+    <button class="run-btn" id="runBtn" onclick="runCode()">
+      <svg viewBox="0 0 16 16"><polygon points="3,2 13,8 3,14"/></svg>Run
+    </button>
+  </div>
+  <div class="editor-body">
+    <div class="editor-left">
+      <div class="pane-header">
+        <span class="pane-dot" style="background:#f87171;"></span>
+        <span class="pane-dot" style="background:#fbbf24;"></span>
+        <span class="pane-dot" style="background:#4ade80;"></span>
+        <span style="margin-left:5px;">editor &mdash; main.py</span>
+      </div>
+      <div class="cm-wrap">
+        <textarea id="codeInput">
+# Welcome to RunIt!
+# Write your Python code and press Run
+
+def greet(name):
+    message = f"Hello, {name}!"
+    return message
+
+print(greet("World"))
+
+for i in range(5):
+    square = i * i
+    print(f"  {i} ** 2 = {square}")
+</textarea>
+      </div>
+    </div>
+    <div class="editor-right">
+      <div class="output-tabs">
+        <div class="out-tab active" id="tab-terminal" onclick="switchTab('terminal')">TERMINAL</div>
+        <div class="out-tab" id="tab-problems" onclick="switchTab('problems')">PROBLEMS <span class="err-badge hidden" id="errBadge">0</span></div>
+      </div>
+      <div class="output-panel" id="terminalPanel"><span class="out-empty">// Press Run &#9654; to execute your code</span></div>
+      <div class="errors-panel hidden" id="problemsPanel"><div class="no-errors">&#10003; No problems detected</div></div>
+    </div>
+  </div>
+  <div class="status-bar">
+    <span class="status-item">Python 3.11</span>
+    <span class="status-item">UTF-8</span>
+    <span class="status-item">Spaces: 4</span>
+    <span class="status-item ml">RunIt v1.0</span>
+  </div>
+</div>
+
+<!-- DOCS -->
+<div class="page" id="page-docs">
+  <div class="docs-page">
+    <h2>Documentation</h2>
+    <p>Learn Python with ready-to-run examples. Click any card to load it in the editor.</p>
+    <div class="docs-grid">
+      <div class="doc-card" onclick="loadEx('hello')"><div class="doc-card-title">&#128075; Hello World</div><div class="doc-card-code">print("Hello, World!")</div></div>
+      <div class="doc-card" onclick="loadEx('loop')"><div class="doc-card-title">&#128260; For Loop</div><div class="doc-card-code">for i in range(5):</div></div>
+      <div class="doc-card" onclick="loadEx('func')"><div class="doc-card-title">&#9881; Functions</div><div class="doc-card-code">def greet(name): ...</div></div>
+      <div class="doc-card" onclick="loadEx('list')"><div class="doc-card-title">&#128203; Lists</div><div class="doc-card-code">nums = [1, 2, 3, 4, 5]</div></div>
+      <div class="doc-card" onclick="loadEx('dict')"><div class="doc-card-title">&#128230; Dictionaries</div><div class="doc-card-code">data = {"key": "value"}</div></div>
+      <div class="doc-card" onclick="loadEx('fib')"><div class="doc-card-title">&#128290; Fibonacci</div><div class="doc-card-code">def fib(n): ...</div></div>
+    </div>
+    <div class="doc-section">
+      <h3>How to use RunIt</h3>
+      <div class="code-block">
+        <span class="cc"># 1. Click the Editor tab</span><br>
+        <span class="cc"># 2. Write your Python code</span><br>
+        <span class="cc"># 3. Press Run — output appears instantly</span><br>
+        <span class="cc"># 4. Check PROBLEMS tab for errors</span><br><br>
+        <span class="ck">print</span>(<span class="cs">"That's it!"</span>)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<div class="page" id="page-about">
+  <div class="about-page">
+    <h2>About RunIt</h2>
+    <p>RunIt is a fast, minimal Python compiler that runs entirely in your browser. No installations, no accounts — just open and code.</p>
+    <p>Built for beginners learning Python without hassle, and developers who need a quick scratchpad on any device.</p>
+    <div style="margin-bottom:1.5rem;">
+      <span class="about-tag">Python 3.11</span>
+      <span class="about-tag">Free Forever</span>
+      <span class="about-tag">No Signup</span>
+      <span class="about-tag">Dark + Light</span>
+      <span class="about-tag">Mobile Ready</span>
+    </div>
+    <div class="feature-list">
+      <div class="feature-item"><div class="fi-icon">&#9889;</div><div class="fi-title">Instant Execution</div><div class="fi-desc">Zero delay — run in milliseconds</div></div>
+      <div class="feature-item"><div class="fi-icon">&#128290;</div><div class="fi-title">Line Numbers</div><div class="fi-desc">Always know where you are</div></div>
+      <div class="feature-item"><div class="fi-icon">&#129504;</div><div class="fi-title">Autocomplete</div><div class="fi-desc">Smart Python suggestions</div></div>
+      <div class="feature-item"><div class="fi-icon">&#128027;</div><div class="fi-title">Error Detection</div><div class="fi-desc">Problems tab for runtime errors</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT -->
+<div class="page" id="page-contact">
+  <div class="contact-page">
+    <h2>Contact</h2>
+    <p>Have a suggestion or found a bug? Send us a message.</p>
+    <div class="form-group"><label class="form-label">NAME</label><input class="form-input" type="text" placeholder="Your name"/></div>
+    <div class="form-group"><label class="form-label">EMAIL</label><input class="form-input" type="email" placeholder="your@email.com"/></div>
+    <div class="form-group"><label class="form-label">MESSAGE</label><textarea class="form-textarea" placeholder="Tell us what's on your mind..."></textarea></div>
+    <button class="form-submit" onclick="submitForm(this)">Send Message &#8599;</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js"></script>
+<script>
+let currentTheme='dark';
+function toggleTheme(){
+  currentTheme=currentTheme==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',currentTheme==='light'?'light':'');
+  document.getElementById('themebtn').textContent=currentTheme==='dark'?'🌙':'☀️';
+  if(editor)editor.setOption('theme',currentTheme==='dark'?'dracula':'eclipse');
+}
+function showPage(name){
+  document.querySelectorAll('.page,.editor-page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-link[data-page]').forEach(l=>l.classList.toggle('active',l.dataset.page===name));
+  if(name==='editor'&&editor)setTimeout(()=>editor.refresh(),30);
+}
+function toggleMenu(){document.getElementById('hamburger').classList.toggle('open');document.getElementById('mobileMenu').classList.toggle('open');}
+function closeMenu(){document.getElementById('hamburger').classList.remove('open');document.getElementById('mobileMenu').classList.remove('open');}
+
+let editor;
+window.addEventListener('load',()=>{
+  const pyWords=['False','None','True','and','as','assert','async','await','break','class','continue','def','del','elif','else','except','finally','for','from','global','if','import','in','is','lambda','nonlocal','not','or','pass','raise','return','try','while','with','yield','print','input','len','range','int','float','str','bool','list','dict','set','tuple','type','isinstance','hasattr','getattr','setattr','enumerate','zip','map','filter','sorted','reversed','sum','min','max','abs','round','open','super','self','__init__','append','extend','insert','remove','pop','clear','copy','count','index','join','split','strip','lstrip','rstrip','replace','format','upper','lower','title','startswith','endswith','find','keys','values','items','get','update','any','all','next','iter','id','dir','repr','hash','hex','oct','bin','ord','chr','pow','divmod','callable','eval','exec','globals','locals','print','Exception','ValueError','TypeError','KeyError','IndexError','AttributeError','NameError','ZeroDivisionError','ImportError','FileNotFoundError','RuntimeError','StopIteration','math','os','sys','re','json','random','datetime','time','collections','itertools','functools','sqrt','ceil','floor','log','sin','cos','tan','pi','randint','choice','shuffle'];
+  function pyHint(cm){
+    const cur=cm.getCursor(),tok=cm.getTokenAt(cur);
+    const word=tok.string.slice(0,cur.ch-tok.start);
+    if(!word||word.length<1)return null;
+    const matches=pyWords.filter(w=>w.startsWith(word)&&w!==word).slice(0,15);
+    if(!matches.length)return null;
+    return{list:matches,from:{line:cur.line,ch:tok.start},to:{line:cur.line,ch:cur.ch}};
+  }
+  editor=CodeMirror.fromTextArea(document.getElementById('codeInput'),{
+    mode:'python',theme:'dracula',lineNumbers:true,tabSize:4,indentWithTabs:false,
+    styleActiveLine:true,matchBrackets:true,autoCloseBrackets:true,
+    extraKeys:{'Ctrl-Enter':runCode,'F8':runCode,'Tab':cm=>cm.replaceSelection('    '),'Ctrl-Space':cm=>CodeMirror.showHint(cm,pyHint,{completeSingle:false})},
+    gutters:['CodeMirror-linenumbers'],
+  });
+  editor.on('keyup',(cm,e)=>{
+    const skip=['Enter','Escape','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Backspace','Delete','Home','End','Tab','Shift','Control','Alt','Meta'];
+    if(!skip.includes(e.key)&&!cm.state.completionActive)CodeMirror.showHint(cm,pyHint,{completeSingle:false,alignWithWord:true});
+  });
+});
+
+function switchTab(tab){
+  document.getElementById('tab-terminal').classList.toggle('active',tab==='terminal');
+  document.getElementById('tab-problems').classList.toggle('active',tab==='problems');
+  document.getElementById('terminalPanel').classList.toggle('hidden',tab!=='terminal');
+  document.getElementById('problemsPanel').classList.toggle('hidden',tab!=='problems');
+}
+
+function runCode(){
+  const code=editor?editor.getValue():'';
+  const term=document.getElementById('terminalPanel');
+  const probs=document.getElementById('problemsPanel');
+  const badge=document.getElementById('errBadge');
+  const btn=document.getElementById('runBtn');
+  term.innerHTML='<span class="out-empty">Running...</span>';
+  btn.innerHTML='&#9203;';btn.style.animation='none';
+  if(typeof Sk==='undefined'){term.innerHTML='<span class="out-empty">Loading Python engine...</span>';resetBtn();return;}
+  const t0=performance.now();let lines=[];
+  Sk.configure({output:txt=>{txt.split('\n').forEach(l=>{if(l!=='')lines.push(l);});},read:x=>{if(Sk.builtinFiles&&Sk.builtinFiles.files[x])return Sk.builtinFiles.files[x];throw"File not found: '"+x+"'";}});
+  Sk.misceval.asyncToPromise(()=>Sk.importMainWithBody('<stdin>',false,code,true))
+  .then(()=>{
+    const ms=(performance.now()-t0).toFixed(1);
+    term.innerHTML=(!lines.length?'<span class="out-empty">// No output</span>':lines.map(l=>`<div class="out-line"><span class="out-prompt">&gt;</span><span class="out-text">${esc(l)}</span></div>`).join(''))+`<div class="out-done">&#10003; Done in ${ms}ms</div>`;
+    probs.innerHTML='<div class="no-errors">&#10003; No problems detected</div>';
+    badge.classList.add('hidden');switchTab('terminal');
+  }).catch(err=>{
+    const ms=(performance.now()-t0).toFixed(1),msg=err.toString();
+    term.innerHTML=`<div class="out-line"><span class="out-prompt" style="color:#ef4444;">&#10007;</span><span style="color:#fca5a5;">${esc(msg)}</span></div><div class="out-done">&#10007; Failed in ${ms}ms</div>`;
+    probs.innerHTML=`<div class="err-item"><span class="err-icon">&#9888;</span><span class="err-text">${esc(msg)}</span></div>`;
+    badge.textContent='1';badge.classList.remove('hidden');switchTab('terminal');
+  }).finally(resetBtn);
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function resetBtn(){const btn=document.getElementById('runBtn');btn.innerHTML='<svg viewBox="0 0 16 16" style="width:11px;height:11px;fill:#fff;flex-shrink:0;display:inline-block;vertical-align:middle;"><polygon points="3,2 13,8 3,14"/></svg> Run';btn.style.animation='runpulse 2.2s ease-in-out infinite';}
+
+const EX={
+  hello:`# Hello World\nprint("Hello, World!")\nprint("Welcome to RunIt!")`,
+  loop:`# For Loop\nfor i in range(1, 6):\n    print(f"Count: {i}")\n\ntotal = sum(range(1, 11))\nprint(f"Sum 1-10 = {total}")`,
+  func:`# Functions\ndef greet(name, times=1):\n    for _ in range(times):\n        print(f"Hello, {name}!")\n\ngreet("RunIt", 3)`,
+  list:`# Lists\nnums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\nevens = [x for x in nums if x % 2 == 0]\nsquares = [x**2 for x in nums]\nprint("Evens:", evens)\nprint("Squares:", squares)`,
+  dict:`# Dictionaries\nperson = {"name": "Alex", "age": 20, "lang": "Python"}\nfor key, val in person.items():\n    print(f"  {key}: {val}")`,
+  fib:`# Fibonacci\ndef fib(n):\n    a, b = 0, 1\n    result = []\n    while a < n:\n        result.append(a)\n        a, b = b, a + b\n    return result\n\nprint(fib(200))`
+};
+function loadEx(name){if(editor)editor.setValue(EX[name]);showPage('editor');}
+function submitForm(btn){btn.textContent='&#10003; Sent!';btn.style.background='var(--accent)';setTimeout(()=>{btn.textContent='Send Message &#8599;';btn.style.background='';},3000);}
+</script>
+</body>
+</html>
